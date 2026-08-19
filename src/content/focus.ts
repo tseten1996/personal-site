@@ -28,10 +28,11 @@ export const focusAreas: Focus[] = [
     index: "02",
     title: "Agentic systems with guardrails",
     statement: "The interesting part of an agent is the part that is not the model.",
-    body: "Orchestration, tool boundaries, deterministic state and the ability to say 'I cannot verify that' are what make an agent usable in a release pipeline. Telos takes the same position in a different domain: the graph is deterministic, and the model is only allowed to name what the graph already proved.",
+    body: "Orchestration, tool boundaries, deterministic state and the ability to say 'I cannot verify that' are what make an agent usable in a release pipeline. Telos takes the same position in a different domain: the graph is deterministic, and the model is only allowed to name what the graph already proved. Wander makes the same bet inside a product — the model returns proposed actions, and the mutation a human tap would have called is what applies them.",
     evidence: "Release automation platform · Arch Capital · and Telos",
     evidenceLinks: [
       { label: "Telos case study", href: "/work/telos/" },
+      { label: "Wander case study", href: "/work/wander/" },
       { label: "Experience", href: "/#experience" },
     ],
     tools: ["Python", "LangGraph", "PydanticAI", "Multi-agent orchestration", "Tool calling"],
@@ -52,7 +53,7 @@ export const focusAreas: Focus[] = [
     index: "04",
     title: "Product engineering",
     statement: "Own the whole slice: schema, policy, API and the screen.",
-    body: "The fastest way to a coherent product is for one person to be able to follow a feature from a Postgres policy to the thing a user taps. Wander is that argument in full: no backend, thirty migrations, and authorization that lives where the data does.",
+    body: "The fastest way to a coherent product is for one person to be able to follow a feature from a Postgres policy to the thing a user taps. Wander is that argument in full: thirty-two migrations, authorization that lives where the data does, and exactly one piece of server-side code — added only once a feature genuinely needed something the browser could not be trusted to hold.",
     evidence: "Wander · React 19, Supabase, Postgres RLS",
     evidenceLinks: [
       { label: "Wander case study", href: "/work/wander/" },

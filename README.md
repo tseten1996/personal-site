@@ -39,7 +39,7 @@ fails if they do.
 
 **Everything in these files is traceable to the résumé or to a repository.**
 No metric is estimated. Keep it that way — `stats` in particular are real
-commit, migration, package and test counts, verified 17 Aug 2026.
+commit, migration, package and test counts, verified 19 Aug 2026.
 
 ## Résumé
 

@@ -251,7 +251,7 @@ export const renderProjectMd = (slug: string) => {
     `## Key decisions`,
     p.decisions.map((d) => `### ${d.title}\n\n${d.body}`).join("\n\n"),
     `## Current status`,
-    `${p.status}. ${p.stats.map((s) => `${s.label}: ${s.value}`).join(" · ")}. Figures verified against the repository on 17 August 2026.`,
+    `${p.status}. ${p.stats.map((s) => `${s.label}: ${s.value}`).join(" · ")}. Figures verified against the repository on 19 August 2026.`,
     `## Links`,
     bullets([
       `[Case study](${abs(`/work/${p.slug}/`)})`,

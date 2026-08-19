@@ -52,11 +52,11 @@ export const projects: Project[] = [
     slug: "wander",
     index: "01",
     name: "Wander",
-    kicker: "Collaborative product · React 19 + Supabase",
+    kicker: "Collaborative product · React 19 · Supabase · Workers AI",
     summary:
       "A group trip planner where only one person needs an account — and Postgres, not the browser, decides what everyone is allowed to see.",
     whatItIs:
-      "Wander is a collaborative trip-planning web application for small groups of friends. One person creates a trip and everyone else joins through an invite link without creating an account. It replaces the group chat with shared polls, an itinerary, a budget with multi-currency settle-up, checklists, packing lists, notes and a map.",
+      "Wander is a collaborative trip-planning web application for small groups of friends. One person creates a trip and everyone else joins through an invite link without creating an account. It replaces the group chat with shared polls, an itinerary, a budget with multi-currency settle-up, checklists, packing lists, notes and a map. A narrow AI layer sits on top — it turns a pasted booking confirmation into an itinerary item and suggests a better order for a day — and it is only ever allowed to propose: every accepted suggestion is applied by the same mutation a human tap would use.",
     challenges: [
       {
         title: "Authorizing users who never signed up",
@@ -67,12 +67,20 @@ export const projects: Project[] = [
         body: "Policies that ask \"is this user a member of this trip?\" naturally read the members table, which is itself protected by a policy that asks the same question. Resolving that required SECURITY DEFINER helper functions (is_trip_member, is_trip_owner, my_member_id) that break the recursion while keeping the check server-side.",
       },
       {
-        title: "Realtime cache invalidation without a backend",
+        title: "Realtime cache invalidation with no server to push from",
         body: "With no server to push from, Supabase Realtime streams Postgres change data capture straight to the client and invalidates the specific TanStack Query keys affected, so optimistic local writes and other members' changes converge without a full refetch.",
       },
       {
         title: "Deep links on a host with no rewrite rules",
         body: "GitHub Pages serves static files and cannot rewrite unknown paths to an SPA entry point. Hash routing plus a relative Vite base means an invite link resolves under any repository name with zero deploy configuration.",
+      },
+      {
+        title: "Adding AI without adding a secret",
+        body: "Every credential in Wander until this point was public by design, bounded by Row Level Security rather than by secrecy. A model provider key is the opposite: a bearer token carrying billing authority, which cannot ship in a static bundle. Running the endpoint as a Cloudflare Pages Function against the Workers AI binding removed the problem instead of managing it — the platform authenticates the call, so there is no key to store, scope, rotate or leak. The usage ledger is written through a SECURITY DEFINER RPC rather than a service-role key, so the new runtime holds no database credential either.",
+      },
+      {
+        title: "Rate-limiting people who can mint identities on demand",
+        body: "An invite link creates an anonymous session on demand, so anyone holding one can produce unlimited distinct user ids and a per-user quota means nothing. The quota is therefore counted per trip — the only identity in the system that costs something to create — and a quota that cannot be read refuses the request rather than allowing it, because failing open would remove the only bound on what a leaked link can spend.",
       },
     ],
     role: "Sole engineer — schema, policies, client and deployment",
@@ -86,7 +94,7 @@ export const projects: Project[] = [
     approach:
       "Invert the cost. The trip owner signs in once with an email magic link. Everyone else opens an invite link, types a display name, picks a colour, and is planning in under fifteen seconds. Behind that is a real, invisible anonymous session, persisted on the device, so every participant still has a genuine identity the database can reason about.",
     architecture:
-      "A React 19 single-page app served as static files from GitHub Pages, talking straight to Supabase. There is no custom backend, which means there is no server that could be trusted-but-wrong: authorization lives in Postgres Row Level Security. Every table carries a trip_id and is readable only by someone holding a members row for that trip. Joining happens exclusively through a join_trip RPC so invite codes are validated server-side, and the policy helpers are SECURITY DEFINER functions to keep the checks non-recursive. TanStack Query owns all server state; Supabase Realtime streams Postgres changes back and invalidates the cache, so every member watches the plan change under their hands.",
+      "A React 19 single-page app served as static files, talking straight to Supabase. Authorization lives in Postgres Row Level Security, so there is no server that could be trusted-but-wrong: every table carries a trip_id and is readable only by someone holding a members row for that trip. Joining happens exclusively through a join_trip RPC so invite codes are validated server-side, and the policy helpers are SECURITY DEFINER functions to keep the checks non-recursive. TanStack Query owns all server state; Supabase Realtime streams Postgres changes back and invalidates the cache, so every member watches the plan change under their hands. The single piece of server-side code is /api/ai, a Cloudflare Pages Function holding the AI layer's kill switch, per-trip quota and usage ledger. It reads trip data as the caller rather than with a privileged key, so Row Level Security — not the function — still decides what the model is allowed to see.",
     decisions: [
       {
         title: "Authorization is a database concern",
@@ -94,7 +102,7 @@ export const projects: Project[] = [
       },
       {
         title: "Hash routing, deliberately",
-        body: "A static host has no rewrite rules. Hash routing plus a relative Vite base means an invite deep link resolves under any repository name, with zero deploy configuration.",
+        body: "A static host has no rewrite rules. Hash routing plus a relative Vite base means an invite deep link resolves under any repository name, with zero deploy configuration. Cloudflare could rewrite now, so the constraint has lifted — but every invite link, share link, bookmark and installed PWA already in circulation points at a hash URL, so the change is tracked as its own decision rather than folded into a hosting move.",
       },
       {
         title: "Every external service fails soft",
@@ -102,29 +110,43 @@ export const projects: Project[] = [
       },
       {
         title: "Schema moves forward only",
-        body: "Thirty incremental migrations rather than an edited baseline — multi-currency budgets, availability polls, notifications and revocable public share links each arrived as their own reviewable step.",
+        body: "Thirty-two incremental migrations rather than an edited baseline — multi-city legs, multi-currency budgets, availability polls, notifications, revocable public share links and the AI usage ledger each arrived as their own reviewable step.",
+      },
+      {
+        title: "A second host, not a migration",
+        body: "Cloudflare Pages runs alongside GitHub Pages rather than replacing it, for the two things a static GitHub host cannot do: set cache headers, and build a preview per pull request. GitHub Pages stays canonical, so every URL already in circulation keeps working and abandoning either direction costs one deleted file.",
+      },
+      {
+        title: "The AI feature ships without a secret",
+        body: "Workers AI is a platform-authenticated binding, not an API credential, and the ledger write goes through a SECURITY DEFINER RPC instead of a service-role key. A credential that does not exist cannot leak, cannot be rotated late, and cannot be laundered into the bundle by a well-meaning environment variable.",
+      },
+      {
+        title: "Deterministic first; the model only judges",
+        body: "If a question can be answered by SQL, a rule or arithmetic, it is answered that way and no model is called — a sum() is right every time. The model handles the residue, returns schema-validated proposed actions capped in the schema rather than in the prompt, and never writes to a table. Measurement then narrowed its job further: asked to improve a day, two models three tiers apart made the same scheduling-collision error, so the feature was reshaped to generate candidate changes deterministically and let the model only select and explain one.",
       },
     ],
     stack: [
       { group: "Client", items: ["React 19", "TypeScript", "Vite", "Tailwind v4", "TanStack Query", "Motion"] },
       { group: "Data", items: ["Supabase", "PostgreSQL", "Row Level Security", "PL/pgSQL", "Realtime"] },
-      { group: "Platform", items: ["GitHub Actions", "GitHub Pages", "PWA", "Leaflet"] },
+      { group: "AI", items: ["Cloudflare Pages Functions", "Workers AI", "Zod", "Structured output"] },
+      { group: "Platform", items: ["GitHub Actions", "GitHub Pages", "Cloudflare Pages", "PWA", "Leaflet"] },
     ],
     stats: [
-      { label: "Commits", value: "290" },
-      { label: "Migrations", value: "30" },
-      { label: "First commit", value: "Jul 2026" },
+      { label: "Commits", value: "300" },
+      { label: "Migrations", value: "32" },
+      { label: "AI credentials", value: "0" },
     ],
     links: [
       { label: "Live app", href: "https://tseten1996.github.io/wander/", kind: "live" },
       { label: "Source", href: "https://github.com/tseten1996/wander", kind: "repo" },
     ],
     trace: [
-      { id: "spa", label: "React SPA", detail: "Static bundle on GitHub Pages. TanStack Query holds server state; optimistic writes land instantly.", meta: "client" },
+      { id: "spa", label: "React SPA", detail: "Static bundle on GitHub Pages, mirrored to Cloudflare Pages for cache headers and per-PR previews. TanStack Query holds server state; optimistic writes land instantly.", meta: "client" },
       { id: "auth", label: "Auth", detail: "Magic link for the owner, invisible anonymous session for invited friends. Both produce a real auth.uid().", meta: "supabase" },
       { id: "rls", label: "Row Level Security", detail: "Every policy asks one question: does this uid hold a members row for this trip_id? SECURITY DEFINER helpers keep it non-recursive.", meta: "postgres" },
       { id: "rpc", label: "join_trip RPC", detail: "The only path into a trip. Invite codes are validated server-side, so a guessed code fails in the database, not the UI.", meta: "postgres" },
       { id: "realtime", label: "Realtime", detail: "Postgres change data capture streams back over websockets and invalidates the exact queries affected.", meta: "websocket" },
+      { id: "ai", label: "/api/ai", detail: "The only server-side code. Kill switch, per-trip quota and usage ledger; reads trip data as the caller, so RLS still bounds what the model sees. No key, on either side of it.", meta: "cloudflare" },
     ],
     schemaType: "WebApplication",
     seoKeywords: [
@@ -134,6 +156,8 @@ export const projects: Project[] = [
       "PostgreSQL Row Level Security",
       "TypeScript",
       "realtime web application",
+      "Cloudflare Pages Functions",
+      "Cloudflare Workers AI",
     ],
   },
   {
@@ -144,7 +168,7 @@ export const projects: Project[] = [
     summary:
       "A code-graph engine for end-to-end test intelligence that will only tell you things it can cite back to a file and a position.",
     whatItIs:
-      "Telos is a local-first command-line tool and library for engineering teams that maintain large end-to-end test suites. It reads a codebase through stack adapters, builds a queryable graph of how the application actually fits together, and attaches a file citation to every fact it reports, so impact analysis can be audited rather than trusted.",
+      "Telos is a local-first command-line tool and library for engineering teams that maintain large end-to-end test suites. It reads a codebase through stack adapters, builds a queryable graph of how the application actually fits together, and attaches a file citation to every fact it reports, so impact analysis can be audited rather than trusted. The graph is the foundation of a larger design — a registry of human-approved business journeys, generated Playwright tests, and validation gates a test must clear before anyone is asked to review it — of which the graph engine and the first adapter are what exist today.",
     challenges: [
       {
         title: "Telling a fact from a coincidence",
@@ -162,19 +186,23 @@ export const projects: Project[] = [
         title: "Bounding what a language model may assert",
         body: "Models are allowed to name semantics — what a journey means — but never to introduce an edge. The deterministic graph is the only source of structural truth, which is what makes the output citable instead of plausible.",
       },
+      {
+        title: "Knowing, and publishing, what the extractor cannot see",
+        body: "The dangerous failure of a static analyser is not a wrong answer but a quiet one: a shape it does not recognise produces no edge, and an empty result reads like an empty codebase. Every unresolved case — a namespace import, a URL assembled by concatenation, a route declared with satisfies rather than a type annotation — fails closed and is written down at the call site, with the measured coverage beside it, so \"no routes found\" can never be mistaken for \"there are no routes\".",
+      },
     ],
     role: "Sole engineer — design, graph store, Angular adapter and CLI",
     year: "2026",
-    status: "In development · private",
+    status: "Graph foundation complete · in development · private",
     visibility: "private",
     layout: "trace",
     accentSection: "dark",
     problem:
       "End-to-end suites drift away from the application they were written to protect. Generating more tests is easy; knowing which business journey is actually covered, and which test breaks when a route changes, is the part nobody can answer. Ask a language model directly and it will answer confidently and sometimes wrongly.",
     approach:
-      "Build the boring, deterministic thing first. Telos ingests a codebase through stack adapters and produces a factual graph where every node and edge records the file it was derived from. Impact analysis then becomes a traversal with citations attached rather than a plausible-sounding paragraph. Models are permitted to name semantics; they are never permitted to invent an edge.",
+      "Build the boring, deterministic thing first. Telos ingests a codebase through stack adapters and produces a factual graph where every node and edge records the file it was derived from. Impact analysis then becomes a traversal with citations attached rather than a plausible-sounding paragraph. Models are permitted to name semantics; they are never permitted to invent an edge. Everything above the graph inherits that shape: agents read and emit typed proposals, deterministic code validates and applies them, and a generated test only reaches a human after it has cleared gates that no model gets a vote in.",
     architecture:
-      "A pnpm TypeScript monorepo with a deliberately thin core. @telos/graph is a SQLite-backed store with a Zod-validated schema, content-addressed identifiers and deterministic export. @telos/core holds the adapter registry and scan pipeline and knows nothing about any particular framework. @telos/adapter-angular resolves routes, components, services and dependency-injection edges through the real import graph. @telos/cli exposes telos scan, which produces a cited inventory report.",
+      "A pnpm TypeScript monorepo with a deliberately thin core. @telos/graph is a SQLite-backed store with a Zod-validated schema, content-addressed identifiers and deterministic export. @telos/core holds the adapter registry and scan pipeline and knows nothing about any particular framework. @telos/adapter-angular resolves routes, components, services and dependency-injection edges through the real import graph, using ts-morph over the TypeScript AST. @telos/cli exposes telos scan, which produces a cited inventory report. The design around those packages separates four planes — versioned knowledge artifacts, a reasoning plane of typed agents, a deterministic execution plane, and the stack adapters — under a single invariant: the reasoning plane may read knowledge and emit typed proposals, and may never write. Every mutation passes through execution-plane code that validates first, which is what turns guardrails into enforced properties rather than instructions in a prompt.",
     decisions: [
       {
         title: "Adapters, not a hard-coded stack",
@@ -192,9 +220,25 @@ export const projects: Project[] = [
         title: "Local-first, with the seam already cut",
         body: "Everything runs on a developer machine today. The persistence boundary is designed for a control plane that does not exist yet, so adding one later is not a rewrite.",
       },
+      {
+        title: "No supervisor agent",
+        body: "A model that chooses which specialist runs next was considered and rejected. It makes runs non-reproducible, degrades the audit trail from a record into a transcript, and — decisively — converts every hard limit into a request the model is free to ignore. Agents reason; code enforces; the pipeline is fixed.",
+      },
+      {
+        title: "Proven and inferred edges are never blended",
+        body: "An edge derived from an AST is a fact. An edge a model resolved from genuine ambiguity is a hypothesis. Both are stored, both are labelled, and a query that mixes them says so — a confidence figure that quietly averages the two is exactly the laundered guess the tool exists to prevent.",
+      },
+      {
+        title: "Humans own the intent; the graph owns the citations",
+        body: "In the journey registry a person writes what the business expects and how critical it is; the code references beneath it are derived and regenerated on every scan. A refactor updates the citations and raises a review request — it never rewrites what a human said the business does. A registry agents may edit is one that eventually describes the bug instead of the requirement.",
+      },
+      {
+        title: "A generated test has to be reviewable in thirty seconds",
+        body: "Selectors live in human-owned action files and nowhere else, so a generated test reads as business intent rather than as locators. And a test that stays green when a precondition its outcome depends on is deliberately broken is rejected as vacuous — mechanically, before a person sees it. Without both, human approval is theatre.",
+      },
     ],
     stack: [
-      { group: "Core", items: ["TypeScript", "Node 22", "pnpm workspaces"] },
+      { group: "Core", items: ["TypeScript", "Node 22", "pnpm workspaces", "ts-morph"] },
       { group: "Storage", items: ["better-sqlite3", "Zod"] },
       { group: "Interface", items: ["Commander", "CLI reports"] },
       { group: "Quality", items: ["Vitest", "Design docs", "Written plans"] },
@@ -210,7 +254,7 @@ export const projects: Project[] = [
       { id: "adapter", label: "Stack adapter", detail: "Angular first: routes, components, services and DI edges, each resolved through the import graph rather than by name.", meta: "@telos/adapter-angular" },
       { id: "core", label: "Scan pipeline", detail: "Adapter registry plus a fixed pipeline. The core stays framework-agnostic so a second adapter costs nothing.", meta: "@telos/core" },
       { id: "graph", label: "Cited graph", detail: "SQLite store, Zod-validated schema, content-addressed IDs. Every edge carries the file it came from.", meta: "@telos/graph" },
-      { id: "cli", label: "telos scan", detail: "A cited inventory report — deterministic enough to diff between runs and put in front of a reviewer.", meta: "@telos/cli" },
+      { id: "cli", label: "telos scan", detail: "A cited inventory report. Two scans of an unchanged tree export byte-identical JSON, which is what makes the graph usable as a CI signal rather than a snapshot.", meta: "@telos/cli" },
     ],
     schemaType: "SoftwareSourceCode",
     seoKeywords: [
@@ -220,6 +264,8 @@ export const projects: Project[] = [
       "TypeScript monorepo",
       "end-to-end testing",
       "SQLite",
+      "Playwright",
+      "test intelligence",
     ],
   },
   {
