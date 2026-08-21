@@ -43,10 +43,7 @@ export const focusAreas: Focus[] = [
     statement: "A gate that fails the build is worth more than a dashboard nobody opens.",
     body: "Pipelines that enforce rather than report — dependency and static analysis in the critical path, migrations that only move forward, and deployment cycles short enough that shipping stops being an event.",
     evidence: "GitHub Actions, JFrog X-Ray, SonarCloud · Arch Capital",
-    evidenceLinks: [
-      { label: "Experience", href: "/#experience" },
-      { label: "Field Manual case study", href: "/work/field-manual/" },
-    ],
+    evidenceLinks: [{ label: "Experience", href: "/#experience" }],
     tools: ["GitHub Actions", "Docker", "AWS", "JFrog X-Ray", "SonarCloud", "Liquibase / Flyway"],
   },
   {

@@ -251,7 +251,9 @@ export const renderProjectMd = (slug: string) => {
     `## Key decisions`,
     p.decisions.map((d) => `### ${d.title}\n\n${d.body}`).join("\n\n"),
     `## Current status`,
-    `${p.status}. ${p.stats.map((s) => `${s.label}: ${s.value}`).join(" · ")}. Figures verified against the repository on 19 August 2026.`,
+    `${p.status}. ${p.stats.map((s) => `${s.label}: ${s.value}`).join(" · ")}. ${
+      p.sourceNote ?? "Figures verified against the repository on 19 August 2026."
+    }`,
     `## Links`,
     bullets([
       `[Case study](${abs(`/work/${p.slug}/`)})`,
@@ -289,7 +291,7 @@ export const renderLlmsTxt = () =>
     ]),
     `## Profiles`,
     bullets([
-      `[GitHub](${site.github}): Public repositories, including Wander and the Agentic Systems Field Manual.`,
+      `[GitHub](${site.github}): Public repositories, including Wander.`,
       `[LinkedIn](${site.linkedin}): Professional profile.`,
     ]),
     `## Contact`,

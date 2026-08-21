@@ -1,9 +1,15 @@
 /**
- * Case studies for work done in 2026. Every claim below is traceable to a
- * repository Tenzing owns — README, architecture docs, migrations, commit
- * history or source. No metrics are estimated or invented; where a repository
- * is private, the write-up stays at the level of engineering approach and no
- * link is offered.
+ * Case studies for work done in 2026. Nothing here is estimated or invented,
+ * and each entry records where its claims can be checked:
+ *
+ * - Wander and Telos are written from repositories Tenzing owns — README,
+ *   architecture docs, migrations, commit history and source.
+ * - CashOnCash and Payload are products he co-founded whose source is private.
+ *   They are written from what those products publish about themselves, so the
+ *   write-ups stay at the level of product behaviour and engineering position
+ *   and make no claim about internal implementation.
+ *
+ * `sourceNote` on each project states which of the two applies.
  */
 
 export type ProjectStat = { label: string; value: string };
@@ -42,6 +48,11 @@ export type Project = {
   links: ProjectLink[];
   /** Nodes for the architecture visualisation, top to bottom. */
   trace: { id: string; label: string; detail: string; meta: string }[];
+  /**
+   * Where this write-up's claims come from, rendered with the status line.
+   * Defaults to the repository-verification note when absent.
+   */
+  sourceNote?: string;
   /** Structured-data type for this project's page. */
   schemaType: "SoftwareSourceCode" | "WebApplication" | "CreativeWork";
   seoKeywords: string[];
@@ -269,83 +280,186 @@ export const projects: Project[] = [
     ],
   },
   {
-    slug: "field-manual",
+    slug: "cashoncash",
     index: "03",
-    name: "Agentic Systems Field Manual",
-    kicker: "Autonomous publishing · GitHub Actions",
+    name: "CashOnCash",
+    kicker: "Real-estate underwriting · Co-founder",
     summary:
-      "A technical site that extends itself on a schedule, where the repository is the only memory the agent gets.",
+      "An underwriting workbench for rental property, where every number on the report traces back to an input you can edit and defend.",
     whatItIs:
-      "A public technical publication — a daily AI trends board plus a sixteen-module field manual on building agentic systems — that is written and extended by a scheduled AI agent rather than by hand. It is a working demonstration of how to give a stateless automated run enough context to extend a body of work without repeating or contradicting itself.",
+      "CashOnCash is a web application for underwriting rental real estate. An investor drops in an address, MLS link or Zillow URL; the property hydrates with beds, baths, taxes and a current listing rent; and from there every assumption is editable. Cash-on-cash return, NOI, DSCR, IRR, equity multiple and payback recompute as the model changes, alongside a ten-year pro forma. The finished analysis leaves as a live shared link or a lender-ready PDF or Excel export. It is built for operators and small investors who have been underwriting deals on a spreadsheet inherited from someone else.",
     challenges: [
       {
-        title: "Giving a stateless run a memory",
-        body: "Each scheduled run starts with no knowledge of any previous one. The repository itself carries the state: front-matter metadata on every page, an append-only ledger of published topics for deduplication, a roadmap, and architecture decision records that a run must read before it is allowed to write.",
+        title: "A spreadsheet that quietly disagrees with itself",
+        body: "The product exists because of one specific failure: a tab breaks, a formula drifts, and the workbook keeps producing a confident number that is wrong. Nothing in a shared spreadsheet catches that, so it surfaces in front of a lender instead. Replacing it means every figure has to be derived from an assumption rather than stored beside one, because a stored result is exactly what can fall out of step with the model around it.",
       },
       {
-        title: "Publishing safely during a refactor",
-        body: "An in-flight migration to Astro would normally mean either freezing publication or writing into a pipeline that does not ship. Recording the migration as an ADR with an explicit rule — keep authoring in the format that is actually deployed until the new one is wired into CI — turned a half-finished refactor into a documented boundary.",
+        title: "Every KPI has to be defensible line by line",
+        body: "A return figure is only worth anything if the person reading it can be shown where it came from. Each KPI on a CashOnCash report resolves back to the editable input that produced it, which is a real constraint rather than a feature: it rules out the hand-entered override, which is the single most convenient thing to allow and the thing that makes the next reader unable to reconstruct the number.",
       },
       {
-        title: "Pages that still render in five years",
-        body: "Every page is self-contained: inline CSS and JavaScript, no external dependencies, light and dark handled by prefers-color-scheme. Nothing on the site can break because a CDN moved or a package was unpublished.",
+        title: "Recomputing the whole deal on every edit",
+        body: "Changing the purchase price moves the loan, the debt service, the operating statement, every headline metric and all ten years of the pro forma. Doing that as the assumption is typed — with no recalculation the user has to wait on — is what separates a tool someone explores a deal inside from a tool they open once at the end to produce a number they had already decided on.",
+      },
+      {
+        title: "One model, several readers",
+        body: "Sending a partner or a lender a PDF starts a version problem the moment the next assumption changes. A CashOnCash link resolves to the same live model its author is looking at, which means the shared view, the export and the editing session all have to describe one state rather than three snapshots of it taken at different times.",
       },
     ],
-    role: "Sole engineer — repository design, run contract and page architecture",
+    role: "Co-founder and engineer",
     year: "2026",
-    status: "Live · publishing on schedule",
-    visibility: "public",
+    status: "Live · in active development",
+    visibility: "private",
     layout: "grid",
     accentSection: "light",
     problem:
-      "A scheduled agent starts every run with no memory of the last one. Point that at a publishing task and it either repeats yesterday's topic or quietly contradicts it, and the site degrades a little with each run.",
+      "Rental underwriting runs on spreadsheets forked from other people's spreadsheets. They work until a tab breaks, a formula silently drifts, or the wrong version reaches a lender — and none of those failures announce themselves. The number still looks exactly like a number.",
     approach:
-      "Treat the repository as the state and the run prompt as a contract. Each run reads what already exists — front-matter blocks on every page, an append-only ledger of published topics, a roadmap and architecture decision records — before it is allowed to write anything. Constraints that would otherwise be polite prompt requests become artefacts on disk that the next run has to read.",
+      "Make the report the product rather than the file. Underwriting starts from real listing data instead of a blank sheet, every assumption stays editable and owned by the person making it, and the output is one live document rather than a file that is copied and diverges. The rule the team states plainly is that every number can be traced, edited and trusted — which is a commitment about what the software is not allowed to do as much as what it does.",
     architecture:
-      "Self-contained static HTML: inline CSS and JavaScript, no external dependencies, light and dark handled by prefers-color-scheme. A trends board and a sixteen-module field manual are published by GitHub Actions to GitHub Pages. Decisions are recorded as ADRs, including an in-flight migration to Astro that is deliberately described as in transition — so scheduled runs keep shipping to what is actually live instead of writing into a pipeline that is not wired up yet.",
+      "A property is hydrated from an address, MLS link or Zillow URL, then held as a set of editable assumptions — purchase price, rent, vacancy, taxes, operating expenses — from which everything else is derived. The operating statement, debt service, the metric set and the ten-year pro forma are all outputs of those inputs and recompute on edit. Scenarios (base, optimistic, stress and custom) are variations over the same input set rather than duplicated workbooks, and that one model is what a shared link renders, what a PDF prints and what an Excel export writes.",
     decisions: [
       {
-        title: "The repository is the memory",
-        body: "Front-matter on every page and an append-only ledger give a stateless run enough context to extend the site instead of restarting it.",
+        title: "The report is the unit, not the file",
+        body: "An analysis lives at a URL that partners and lenders open, so there is one current version by construction. Export still exists for the people who need paper, but it is a rendering of the live model rather than the thing being passed around.",
       },
       {
-        title: "Architecture-in-transition is written down",
-        body: "The Astro migration is an ADR with an explicit rule about what runs may and may not touch until it lands. A half-finished refactor becomes a documented boundary rather than a trap.",
+        title: "No number without an input behind it",
+        body: "Every metric resolves to an editable assumption, which forbids the hand-entered result. That is the constraint the whole product rests on: it is why a figure survives being questioned in a credit memo instead of needing its author present to explain it.",
       },
       {
-        title: "Zero runtime dependencies",
-        body: "Every page is self-contained. Nothing on the site can break because a CDN moved, and it will still render years from now.",
+        title: "Start from real data, not a blank sheet",
+        body: "Pulling beds, baths, taxes and listing rent from an address means the first version of a model is already close enough to argue with. A blank template is where most underwriting stalls, and it is also where the borrowed spreadsheet gets reached for.",
+      },
+      {
+        title: "Scenarios are variations, not copies",
+        body: "Base, optimistic, stress and custom run against one input set. Duplicating a workbook per scenario is how versions diverge in the first place, so the feature that would most obviously be built as a copy is deliberately not one.",
+      },
+      {
+        title: "Built by operators, not by finance",
+        body: "The team underwrote its own deals on borrowed spreadsheets before building this. The product's opinions — traceability ahead of flexibility, one live report ahead of many files — come from that experience rather than from what underwriting software conventionally looks like.",
       },
     ],
     stack: [
-      { group: "Output", items: ["HTML", "CSS", "Vanilla JS"] },
-      { group: "Pipeline", items: ["GitHub Actions", "GitHub Pages", "Scheduled runs"] },
-      { group: "Process", items: ["ADRs", "Roadmap", "Append-only ledger"] },
-      { group: "In migration", items: ["Astro"] },
+      { group: "Web", items: ["TypeScript", "React", "Vite", "Tailwind CSS"] },
+      { group: "Accounts", items: ["Google sign-in", "Email magic links", "Saved reports"] },
+      { group: "Reporting", items: ["Shared live links", "PDF export", "Excel export"] },
     ],
     stats: [
-      { label: "Modules", value: "16" },
-      { label: "Dependencies", value: "0" },
-      { label: "Started", value: "Jul 2026" },
+      { label: "Pro forma", value: "10-year" },
+      { label: "Scenarios", value: "4" },
+      { label: "Tracked metrics", value: "6" },
     ],
-    links: [
-      { label: "Live site", href: "https://tseten1996.github.io/daily-ai-news/", kind: "live" },
-      { label: "Source", href: "https://github.com/tseten1996/daily-ai-news", kind: "repo" },
-    ],
+    links: [{ label: "Live product", href: "https://cashoncash.io", kind: "live" }],
     trace: [
-      { id: "cron", label: "Scheduled run", detail: "Starts with no memory of any previous run.", meta: "trigger" },
-      { id: "read", label: "Read the repo", detail: "Front-matter, ledger, roadmap and ADRs are read before a single line is written.", meta: "state" },
-      { id: "write", label: "Extend", detail: "One increment: a trends entry, a module, or an article — never a rewrite of what exists.", meta: "output" },
-      { id: "deploy", label: "Actions → Pages", detail: "Commit triggers the build; the live site is the only definition of done.", meta: "ci" },
+      { id: "hydrate", label: "Address in", detail: "A street address, MLS link or Zillow URL. Beds, baths, taxes and a current listing rent arrive in seconds, so the model starts from real figures.", meta: "input" },
+      { id: "assume", label: "Editable assumptions", detail: "Price, rent, vacancy, taxes and operating expenses are the inputs the user owns. Nothing downstream of them is hand-entered.", meta: "model" },
+      { id: "compute", label: "Recompute on edit", detail: "Operating statement, debt service, cash-on-cash, NOI, DSCR, IRR, equity multiple, payback and ten years of pro forma, all derived and all live.", meta: "derived" },
+      { id: "scenario", label: "Scenarios", detail: "Base, optimistic, stress and custom as variations over one input set rather than four copies of a workbook.", meta: "model" },
+      { id: "share", label: "Share or export", detail: "A link a partner or lender opens onto the same live model, or a lender-ready PDF or Excel rendered from it.", meta: "output" },
     ],
-    schemaType: "CreativeWork",
+    sourceNote:
+      "Written from what the product publishes at cashoncash.io, read on 21 August 2026. The source repository is private, so nothing here describes its internals.",
+    schemaType: "WebApplication",
     seoKeywords: [
-      "agentic systems",
-      "AI automation",
-      "GitHub Actions",
-      "static site",
-      "scheduled agents",
-      "architecture decision records",
+      "rental property underwriting",
+      "real estate pro forma software",
+      "cash-on-cash return",
+      "DSCR",
+      "net operating income",
+      "real estate investment analysis",
+    ],
+  },
+  {
+    slug: "payload",
+    index: "04",
+    name: "Payload",
+    kicker: "Agent monetization · Co-founder",
+    summary:
+      "An MCP layer that pays developers when their coding agent takes a sponsored recommendation — and that never sees the prompt it was recommending against.",
+    whatItIs:
+      "Payload is a monetization layer for developers who build with AI coding agents. It installs as an MCP server into Claude Code, Codex or Cursor with a single command. When an agent is planning work that needs a third-party service — a database, an auth provider, a payments API — Payload returns one recommendation, explicitly marked sponsored, which the agent is free to take or ignore. If it is taken, the developer keeps 50% of what the advertiser paid, withdrawn through Stripe. The product's stated shape is \"no banners, no spinner swaps, no prompt uploads\": the agent's own tool call is the entire surface.",
+    challenges: [
+      {
+        title: "Being relevant without reading the prompt",
+        body: "A recommendation is only worth paying for if it fits what someone is actually building, and the obvious way to achieve that is to ship the model's context to the ad server. Payload does the opposite: it receives a brief service-category summary and nothing else. Fields carrying prompt, text, query or file content are rejected rather than trimmed, so the narrow input is enforced at the boundary instead of depending on every caller to respect it. Source code, filenames, project structure and chat history are never collected.",
+      },
+      {
+        title: "Leaving the decision with the agent",
+        body: "At most one recommendation comes back and it is labelled sponsored. The agent chooses whether to use it. That rules out the entire family of designs in which the advertisement wins by being indistinguishable from the tool's own output — which is also the only version of this product a developer would leave installed after the first week.",
+      },
+      {
+        title: "Attribution without an identity to track",
+        body: "Earnings have to reach the right developer across machines and sessions, but the contents of a coding session are exactly what the product has promised not to collect. Attribution rides on a device-scoped token issued at install and revocable from the dashboard, rather than on anything derived from the work itself — so the thing that identifies the earner is deliberately unrelated to the thing that earned.",
+      },
+      {
+        title: "Paying for real work rather than for farming",
+        body: "A per-use payout is an open invitation to automate the trigger. Qualifying requires that a relevant recommendation surfaced, that the agent actually used it, that the account is properly connected, and that the coding was human-initiated; balances then clear fraud review and a hold period before Stripe will release them. The cost of getting this wrong lands on the honest developers, because they are the ones the advertiser budget has to keep paying.",
+      },
+    ],
+    role: "Co-founder and engineer",
+    year: "2026",
+    status: "Live · in active development",
+    visibility: "private",
+    layout: "editorial",
+    accentSection: "dark",
+    problem:
+      "Developers now pay for the agent that writes their code, and the meter runs whether or not the session produced anything worth keeping. Meanwhile the tools those agents reach for — the database, the auth provider, the queue — get chosen inside the session, by the agent, at a moment no one outside it can reach. Both halves are stuck for the same reason: nothing about that moment is legible from the outside.",
+    approach:
+      "Put the recommendation where the decision already happens, and give the developer the upside. Payload ships as an MCP server, so it is a tool the agent calls rather than a surface bolted onto the editor — no banners, no spinner swaps, no prompt uploads. It answers with a single sponsored suggestion the agent can decline, and it splits the advertiser's payment with the developer whose session produced it.",
+    architecture:
+      "An MCP server registered once against the developer's agent over HTTP transport, after which it is available to Claude Code, Codex or Cursor as an ordinary tool. When an agent is planning a build that needs a third-party service it calls payload.recommend with a short service-category summary. The server refuses any field carrying prompt, text, query or file content, matches the category against advertiser campaigns that have been reviewed by hand, and returns at most one result, marked sponsored. A device-scoped token issued at install carries attribution, so the right developer is credited without the session itself being recorded. Qualified earnings accumulate against the account and are withdrawn through Stripe Connect once they clear fraud review.",
+    decisions: [
+      {
+        title: "MCP, not an editor plugin",
+        body: "Shipping as a tool the agent may call means Payload never intercepts, wraps or re-renders anything the editor is doing. It also means uninstalling is one config line or a revoked token — which is what makes \"opt-in\" a property of the integration rather than a promise in the marketing.",
+      },
+      {
+        title: "Reject the field, do not sanitise it",
+        body: "Anything carrying prompt, text, query or file content is refused outright rather than stripped. A filter that cleans its input keeps quietly succeeding when the input changes shape; a filter that refuses it fails loudly. On the boundary that carries the product's entire privacy claim, loud is the correct failure.",
+      },
+      {
+        title: "One recommendation, and it says so",
+        body: "A single sponsored result the agent can ignore. More results, or unlabelled ones, would raise revenue per call immediately and destroy the reason anyone installed it — and the second effect is permanent while the first is not.",
+      },
+      {
+        title: "Advertisers are reviewed by hand",
+        body: "Every advertiser is reviewed before a campaign can run. It does not scale, and at this stage that is deliberate: what is being sold to the developer is that the recommendation is worth taking, and that claim cannot be underwritten by a self-serve form.",
+      },
+      {
+        title: "The payout is a share, not a bounty",
+        body: "50% of what the advertiser paid, tied to a recommendation the agent actually used. Paying per impression would make volume the product and point the incentive directly against every decision above it.",
+      },
+    ],
+    stack: [
+      { group: "Integration", items: ["Model Context Protocol", "HTTP transport", "Claude Code", "Codex", "Cursor"] },
+      { group: "Platform", items: ["Device-scoped tokens", "Category matching", "Reviewed campaigns", "Fraud review"] },
+      { group: "Payouts", items: ["Stripe Connect"] },
+    ],
+    stats: [
+      { label: "Developer share", value: "50%" },
+      { label: "Agents supported", value: "3" },
+      { label: "Prompt data collected", value: "None" },
+    ],
+    links: [{ label: "Live product", href: "https://getpayload.ai", kind: "live" }],
+    trace: [
+      { id: "install", label: "One-line install", detail: "An MCP server registered against Claude Code, Codex or Cursor. A device-scoped token issued at sign-in carries attribution from then on.", meta: "setup" },
+      { id: "call", label: "payload.recommend", detail: "The agent calls it while planning a build that needs a third-party service, passing a short service-category summary.", meta: "mcp" },
+      { id: "boundary", label: "Field rejection", detail: "Fields carrying prompt, text, query or file content are refused rather than trimmed. Source, filenames, project structure and chat history never arrive.", meta: "server" },
+      { id: "match", label: "Matched campaign", detail: "The category is matched against hand-reviewed advertisers. At most one result returns, explicitly marked sponsored.", meta: "server" },
+      { id: "decide", label: "The agent decides", detail: "The recommendation is a suggestion the agent may decline. Nothing is inserted into the editor or into the model's prompt.", meta: "client" },
+      { id: "payout", label: "Stripe Connect", detail: "A used recommendation qualifies, clears fraud review and a hold period, and pays the developer half of what the advertiser paid.", meta: "payouts" },
+    ],
+    sourceNote:
+      "Written from what the product publishes at getpayload.ai, including its FAQ, read on 21 August 2026. The source repository is private, so nothing here describes its internals.",
+    schemaType: "WebApplication",
+    seoKeywords: [
+      "Model Context Protocol",
+      "MCP server",
+      "AI coding agents",
+      "developer monetization",
+      "Claude Code",
+      "agent tooling",
     ],
   },
 ];

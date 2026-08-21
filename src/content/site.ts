@@ -22,7 +22,7 @@ export const site = {
   tagline:
     "Senior software engineer working on event-driven backends, developer tooling and agentic systems.",
   description:
-    "Tenzing Sherpa is a senior software engineer in Los Angeles building event-driven Java and Spring Boot services, Python agentic systems, and full-stack TypeScript products. Selected work: Wander, Telos and the Agentic Systems Field Manual.",
+    "Tenzing Sherpa is a senior software engineer in Los Angeles building event-driven Java and Spring Boot services, Python agentic systems, and full-stack TypeScript products. Selected work: Wander, Telos, CashOnCash and Payload.",
 
   email: "tashidelektenzing@gmail.com",
   github: "https://github.com/tseten1996",
@@ -54,6 +54,7 @@ export const site = {
     "CI/CD",
     "Developer tooling",
     "Agentic AI systems",
+    "Model Context Protocol",
   ],
 } as const;
 

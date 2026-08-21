@@ -94,7 +94,7 @@ export function Building() {
               <span className="display-serif">open on my machine.</span>
             </>
           }
-          intro="Three repositories, all active this year. Snapshots taken in August 2026 — not live counters."
+          intro="The two repositories I own outright and work in most. Snapshots taken in August 2026 — not live counters."
         />
 
         <div className="mt-16 grid grid-cols-1 gap-x-12 gap-y-14 lg:grid-cols-12">

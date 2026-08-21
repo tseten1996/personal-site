@@ -20,11 +20,11 @@ export function Work() {
           label="Selected work"
           title={
             <>
-              Three things built in 2026, each solving a{" "}
+              Four things built in 2026, each solving a{" "}
               <span className="display-serif">different kind</span> of problem.
             </>
           }
-          intro="A collaborative product with no backend, a static-analysis engine that has to cite its sources, and a site that maintains itself. Every figure below comes from the repository it describes."
+          intro="A collaborative product where the database is the only security boundary, a static-analysis engine that has to cite its sources, an underwriting tool where every number traces back to an input, and a monetization layer that pays developers without reading their prompts. Each case study records where its claims can be checked."
         />
       </div>
 

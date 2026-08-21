@@ -36,16 +36,6 @@ export const repos: Repo[] = [
     updated: "Aug 2026",
     caseStudy: "telos",
   },
-  {
-    name: "tseten1996/daily-ai-news",
-    href: "https://github.com/tseten1996/daily-ai-news",
-    visibility: "public",
-    language: "HTML",
-    description: "A trends board and a sixteen-module field manual, extended by a scheduled agent.",
-    note: "In flight: an Astro migration recorded as an ADR, so scheduled runs keep shipping to the live site meanwhile.",
-    updated: "Jul 2026",
-    caseStudy: "field-manual",
-  },
 ];
 
 export const exploring = [
