@@ -1,5 +1,6 @@
 /**
- * "What am I building lately" — verified against the repositories on 19 Aug 2026.
+ * "What am I building lately" — verified against the repositories on 19 Aug 2026
+ * (Vancrowd on 14 Oct 2026).
  * These are snapshots, not live counters: nothing here pretends to be a
  * real-time statistic.
  */
@@ -16,6 +17,16 @@ export type Repo = {
 };
 
 export const repos: Repo[] = [
+  {
+    name: "Vancrowd",
+    href: null,
+    visibility: "private",
+    language: "TypeScript · PL/pgSQL",
+    description: "Group paper trading where nothing executes until every member approves. Nuxt 4 + Supabase, 845 commits since late September.",
+    note: "Latest work: a private research journal — versioned theses, locked predictions, and sharing one version with a club without leaking the rest.",
+    updated: "Oct 2026",
+    caseStudy: "vancrowd",
+  },
   {
     name: "tseten1996/wander",
     href: "https://github.com/tseten1996/wander",

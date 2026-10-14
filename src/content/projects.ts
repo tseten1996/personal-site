@@ -2,8 +2,8 @@
  * Case studies for work done in 2026. Nothing here is estimated or invented,
  * and each entry records where its claims can be checked:
  *
- * - Wander and Telos are written from repositories Tenzing owns — README,
- *   architecture docs, migrations, commit history and source.
+ * - Wander, Telos and Vancrowd are written from repositories Tenzing owns —
+ *   README, architecture docs, migrations, commit history and source.
  * - CashOnCash and Payload are products he co-founded whose source is private.
  *   They are written from what those products publish about themselves, so the
  *   write-ups stay at the level of product behaviour and engineering position
@@ -460,6 +460,109 @@ export const projects: Project[] = [
       "developer monetization",
       "Claude Code",
       "agent tooling",
+    ],
+  },
+  {
+    slug: "vancrowd",
+    index: "05",
+    name: "Vancrowd",
+    kicker: "Group paper trading · Nuxt 4 · Supabase · Agent-built",
+    summary:
+      "A paper-trading portfolio run by a group of friends, where nothing trades until every member approves — and Postgres, not the app, is what enforces it.",
+    whatItIs:
+      "Vancrowd is a web application for small investing clubs of two to eight friends who share one simulated $100,000 portfolio. Any member can propose a buy, sell or rebalance with a written thesis; the trade executes only when every active member approves, and a single reject kills it. Around that loop sit a research dashboard with prices, fundamentals and news, group chat, notifications, a private research journal that records a member's view of a company version by version, and leaderboards that rank groups by return. It is simulated money only and gives no investment advice. It was built through an agent pipeline: every change starts as an issue and arrives as a pull request carrying its own spec, review rounds and test evidence, and only a person merges.",
+    challenges: [
+      {
+        title: "Unanimity that survives a race",
+        body: "Two members pressing Approve in the same second, or a member leaving while a vote is open, are exactly the moments a consensus rule quietly breaks. cast_vote locks the proposal row, the required voters are snapshotted when the proposal is created, and a member who leaves is removed from every open proposal they were required on — which can itself complete the approval. A dedicated concurrency test races final votes and fill jobs against each other on a real database.",
+      },
+      {
+        title: "A fill price nobody can choose",
+        body: "If an approver could see the price and then approve, the group could trade on yesterday's quote. A proposal therefore fills at the first quote stamped after the final approval and never at an earlier one, inside one transaction holding the portfolio lock. Sells settle before buys, and if cash would go negative or a position short, the whole proposal fails and nothing trades.",
+      },
+      {
+        title: "Prices outside the regular session",
+        body: "Members vote at night, and a free market-data tier only covers the regular session. A routing layer takes regular-session quotes from Finnhub and pre-market, after-hours and overnight quotes from Alpaca's free real-time feeds, reading only bid and ask so that a delayed trade print can never become a fill price. Every stamp on screen names its session and source, and a quote too old to trust is labelled Delayed.",
+      },
+      {
+        title: "Sharing research without leaking the rest",
+        body: "A member's research is private until they share one specific version with one group. Leaving the group or revoking the share removes access in the same transaction, and a newer version is never shared by implication. An automated suite attacks this from outside the club, after leaving and after a revoke, including through the public database API.",
+      },
+      {
+        title: "Letting agents build it without trusting them",
+        body: "Agents write the specs, the code, the reviews and the docs, so nothing they say about their own work can count as evidence. The gate that marks a pull request ready is a set of commands, not opinions: lint, types, unit tests, database invariant tests with attack cases, a check that every acceptance criterion maps to a named test, and four independent review verdicts. Anything the checks could not run is listed as not run, never counted as passed.",
+      },
+    ],
+    role: "Sole engineer — product, schema, consensus engine and the agent pipeline that builds it",
+    year: "2026",
+    status: "Live · actively developed",
+    visibility: "private",
+    layout: "trace",
+    accentSection: "dark",
+    problem:
+      "Friend groups already run investing clubs in a group chat: someone drops a ticker, a few people react, nobody records the decision, and six months later nobody knows who was right. The chat has no thesis, no binding decision and no scoreboard.",
+    approach:
+      "Turn the chat into a decision. A proposal needs a written thesis, every member signs off or the trade does not happen, and the result is scored over time and against other groups. Because the rule is the product, it cannot live in the interface: everything that moves money-like state happens inside Postgres functions the browser cannot reach, and each rule is written down as a numbered invariant with database tests that try to break it.",
+    architecture:
+      "A Nuxt 4 application on Vercel with Supabase as the system of record. The browser may insert proposals, votes, comments and notes; trades, positions, cash and proposal status are written only by service-role Postgres functions — create_proposal, cast_vote and execute_proposal — and Row Level Security limits every table to a group's active members. Votes and the audit log are immutable by trigger. Clients never call a market-data provider: server routes read cache tables, and on a serverless host Supabase pg_cron calls a signed tick endpoint every minute in market hours to refresh quotes, fill approved proposals, expire stale ones and snapshot portfolios. Money math lives in pure, unit-tested functions using decimal arithmetic, and the rebalance calculation is written once in SQL and once in TypeScript with a test pinning them to the same numbers. Supabase Realtime streams votes, comments and chat to every member's screen.",
+    decisions: [
+      {
+        title: "The rules are invariants, not features",
+        body: "Unanimity, a single reject kills, immutable votes, atomic execution, fair fill, no negative cash and group isolation are numbered invariants in the domain model — nineteen of them now. Every one has a database test with an attack case, and a story that touches an invariant cannot pass review without one.",
+      },
+      {
+        title: "Fail the whole trade, never part of it",
+        body: "A rebalance that cannot be funded fails with a stated reason rather than filling the half that fits. A partial fill is a decision nobody voted for.",
+      },
+      {
+        title: "Schedule from the database, not the host",
+        body: "A serverless host keeps no process alive to run a scheduled task, so the schedule lives in Supabase: pg_cron calls the app through pg_net with a secret held in Vault, never in a migration. The same Nitro task still runs the tick on a Node deployment, so the app is not tied to either host.",
+      },
+      {
+        title: "No AI runs on Vancrowd",
+        body: "Members can paste an answer from any assistant into the research editor, but Vancrowd reads it by fixed rules, stores none of the pasted text, and marks every imported item \"From AI, unconfirmed\" until a person confirms it. A fill price, a position or a vote is never computed by a model.",
+      },
+      {
+        title: "Every change carries its own evidence",
+        body: "Each story has a product spec and a technical spec before any code, and the pull request carries the build notes, the checks report, each review round from four reviewers — security, code, design and QA — and an approver's summary. A check fails the build if a page, API route or public SQL function is missing from the feature catalogue, or if an acceptance criterion has no test.",
+      },
+      {
+        title: "Only a person merges",
+        body: "Agents open pull requests and label them ready; they never merge, force-push or push to main. A job that runs out of review rounds, or meets a real product question, stops and waits for a human rather than guessing.",
+      },
+    ],
+    stack: [
+      { group: "App", items: ["Nuxt 4", "TypeScript", "Nuxt UI v4", "Tailwind v4", "Unovis"] },
+      { group: "Data", items: ["Supabase", "PostgreSQL", "Row Level Security", "PL/pgSQL", "pg_cron", "Realtime"] },
+      { group: "Market data", items: ["Finnhub", "Financial Modeling Prep", "Alpaca", "decimal.js"] },
+      { group: "Quality", items: ["Vitest", "SQL invariant tests", "Playwright", "Claude Code agents"] },
+    ],
+    stats: [
+      { label: "Commits", value: "845" },
+      { label: "Migrations", value: "36" },
+      { label: "Invariants", value: "19" },
+    ],
+    links: [{ label: "Live app", href: "https://vancrowd.vercel.app", kind: "live" }],
+    trace: [
+      { id: "propose", label: "create_proposal", detail: "A buy, sell or rebalance with a written thesis. The active members are snapshotted as required voters and the author's approval is cast automatically.", meta: "postgres" },
+      { id: "vote", label: "cast_vote", detail: "Locks the proposal row. One reject closes it; the last approval moves it to approved_pending_fill. Votes cannot be edited or deleted.", meta: "postgres" },
+      { id: "tick", label: "Scheduled tick", detail: "pg_cron calls a signed endpoint every minute in market hours. Quotes are refreshed from Finnhub, or from Alpaca outside the regular session.", meta: "pg_cron → vercel" },
+      { id: "fill", label: "execute_proposal", detail: "Fills at the first quote newer than the final approval, in one transaction with the portfolio locked. Sells before buys; no negative cash, no shorts, no partial fills.", meta: "service role" },
+      { id: "realtime", label: "Realtime", detail: "Votes, comments, chat and notifications stream to every member, so the roster fills in while people watch.", meta: "websocket" },
+      { id: "score", label: "Snapshots and leaderboards", detail: "Daily snapshots feed a time-weighted return. A group is listed on the leaderboards only while every member agrees to it.", meta: "postgres" },
+    ],
+    sourceNote:
+      "Written from the repository — README, product brief, domain model, ADRs, build status and commit history — read on 14 October 2026. The repository is private.",
+    schemaType: "WebApplication",
+    seoKeywords: [
+      "paper trading",
+      "investment club app",
+      "Nuxt 4",
+      "Supabase",
+      "PostgreSQL Row Level Security",
+      "pg_cron",
+      "multi-agent software development",
+      "Claude Code",
     ],
   },
 ];
